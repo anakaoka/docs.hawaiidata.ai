@@ -1,0 +1,86 @@
+<%- include('partials/header') %>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <div style="padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.25rem; border-bottom: 1px solid var(--neutral-700, #374151);">
+          <span style="display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(249, 115, 22, 0.15); color: var(--orange-400, #fb923c); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 3px;">Admin</span>
+        </div>
+      <% } %>
+      <ul class="sidebar-nav">
+        <li><a href="/dashboard">&#128202; Overview</a></li>
+        <li><a href="/dashboard/documents">&#128196; Documents</a></li>
+        <li><a href="/dashboard/search">&#128269; Search</a></li>
+        <li><a href="/dashboard/upload">&#128228; Upload</a></li>
+        <li><a href="/dashboard/audit">&#128203; Audit Log</a></li>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+          <li><a href="/dashboard/tenants" class="active">&#127970; Tenants</a></li>
+        <% } %>
+        <li><a href="/dashboard/settings">&#9881; Settings</a></li>
+        <li><a href="/dashboard/suggestions">&#128161; Suggestions</a></li>
+        <li><a href="/dashboard/token-usage">&#9889; Token Usage</a></li>
+      </ul>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Tenants & Users</h1>
+      </div>
+
+      <% tenants.forEach(t => { %>
+        <div class="card" style="margin-bottom: var(--space-xl);">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span class="card-title"><%= t.name %></span>
+              <span class="badge badge-info" style="margin-left: 0.5rem;"><%= t.industry || 'General' %></span>
+              <span style="font-size: 0.8125rem; color: var(--neutral-300); margin-left: 0.5rem;"><%= t.slug %></span>
+            </div>
+            <form method="POST" action="/dashboard/tenants/switch/<%= t.id %>" style="margin: 0;">
+              <button type="submit" class="btn btn-sm btn-primary">Enter Workspace</button>
+            </form>
+          </div>
+
+          <% if (t.theme && t.theme.phone) { %>
+            <p style="font-size: 0.8125rem; color: var(--neutral-400); margin-bottom: var(--space-sm);">
+              <%= t.theme.phone %> &middot; <%= t.theme.email || '' %>
+            </p>
+          <% } %>
+
+          <div class="table-wrapper" style="margin-top: var(--space-md);">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Last Login</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% const tenantUsers = users.filter(u => u.tenant_id === t.id); %>
+                <% if (tenantUsers.length > 0) { %>
+                  <% tenantUsers.forEach(u => { %>
+                    <tr>
+                      <td style="color: var(--white);"><%= u.full_name || '—' %></td>
+                      <td><%= u.email %></td>
+                      <td><%= u.phone || '—' %></td>
+                      <td><span class="badge badge-<%= u.role === 'admin' ? 'warning' : 'info' %>"><%= u.role %></span></td>
+                      <td><span class="badge badge-<%= u.is_active ? 'success' : 'error' %>"><%= u.is_active ? 'Active' : 'Inactive' %></span></td>
+                      <td><%= u.last_login ? formatDate(u.last_login) : 'Never' %></td>
+                      <td><%= formatDate(u.created_at) %></td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr><td colspan="7" style="color: var(--neutral-300);">No users in this tenant.</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% }) %>
+    </main>
+  </div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,177 @@
+<%- include('partials/header') %>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <div style="padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.25rem; border-bottom: 1px solid var(--neutral-700, #374151);">
+          <span style="display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(249, 115, 22, 0.15); color: var(--orange-400, #fb923c); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 3px;">Admin</span>
+        </div>
+      <% } %>
+      <ul class="sidebar-nav">
+        <li><a href="/dashboard" class="active">&#128202; Overview</a></li>
+        <li><a href="/dashboard/documents">&#128196; Documents</a></li>
+        <li><a href="/dashboard/search">&#128269; Search</a></li>
+        <li><a href="/dashboard/upload">&#128228; Upload</a></li>
+        <li><a href="/dashboard/audit">&#128203; Audit Log</a></li>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+          <li><a href="/dashboard/tenants">&#127970; Tenants</a></li>
+        <% } %>
+        <li><a href="/dashboard/settings">&#9881; Settings</a></li>
+        <li><a href="/dashboard/suggestions">&#128161; Suggestions</a></li>
+        <li><a href="/dashboard/token-usage">&#9889; Token Usage</a></li>
+      </ul>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+          <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-xs);">
+            <h1 style="margin: 0;">Admin Dashboard</h1>
+            <span style="display: inline-block; padding: 0.2rem 0.625rem; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(249, 115, 22, 0.15); color: var(--orange-400, #fb923c); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: var(--radius-sm, 4px);">Admin</span>
+          </div>
+          <p style="color: var(--neutral-400); margin-top: var(--space-xs); font-size: 0.875rem;"><%= user.full_name || user.email %> &middot; <%= tenant.name %></p>
+        <% } else { %>
+          <h1>Welcome, <%= user.full_name || user.email %></h1>
+          <p style="color: var(--neutral-400); margin-top: var(--space-sm);"><%= tenant.name %></p>
+        <% } %>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-lg); margin-bottom: var(--space-2xl);">
+        <a href="/dashboard/documents" class="card" style="text-decoration: none; cursor: pointer; transition: border-color 0.2s; border-top: 2px solid var(--white, #fff);">
+          <div style="font-size: 0.8125rem; color: var(--neutral-500);">Documents</div>
+          <div style="font-size: 1.75rem; font-weight: 700; color: var(--white); margin-top: var(--space-xs);"><%= stats.documents %></div>
+        </a>
+        <a href="/dashboard/documents" class="card" style="text-decoration: none; cursor: pointer; transition: border-color 0.2s; border-top: 2px solid var(--success, #22c55e);">
+          <div style="font-size: 0.8125rem; color: var(--neutral-500);">Processed</div>
+          <div style="font-size: 1.75rem; font-weight: 700; color: var(--success); margin-top: var(--space-xs);"><%= stats.processed %></div>
+        </a>
+        <a href="/dashboard/search" class="card" style="text-decoration: none; cursor: pointer; transition: border-color 0.2s; border-top: 2px solid var(--blue-400, #7dd99a);">
+          <div style="font-size: 0.8125rem; color: var(--neutral-500);">Searches</div>
+          <div style="font-size: 1.75rem; font-weight: 700; color: var(--blue-400); margin-top: var(--space-xs);"><%= stats.searches %></div>
+        </a>
+        <a href="/dashboard/audit" class="card" style="text-decoration: none; cursor: pointer; transition: border-color 0.2s; border-top: 2px solid var(--orange-400, #fb923c);">
+          <div style="font-size: 0.8125rem; color: var(--neutral-500);">Audit Events</div>
+          <div style="font-size: 1.75rem; font-weight: 700; color: var(--orange-400); margin-top: var(--space-xs);"><%= stats.auditEvents %></div>
+        </a>
+        <a href="/dashboard/token-usage" class="card" style="text-decoration: none; cursor: pointer; transition: border-color 0.2s; border-top: 2px solid var(--purple-400, #c084fc);">
+          <div style="font-size: 0.8125rem; color: var(--neutral-500);">LLM Cost (est.)</div>
+          <% var llmTokens = (typeof llmCost !== 'undefined') ? llmCost.totalTokens : 0; var llmEstimate = (llmTokens / 1000000 * 5).toFixed(2); %>
+          <div style="font-size: 1.75rem; font-weight: 700; color: var(--purple-400, #c084fc); margin-top: var(--space-xs);">$<%= llmEstimate %></div>
+          <div style="font-size: 0.6875rem; color: var(--neutral-600); margin-top: 2px;"><%= (typeof llmCost !== 'undefined') ? llmCost.apiCalls : 0 %> API calls</div>
+        </a>
+      </div>
+
+      <% if (typeof isAdmin !== 'undefined' && isAdmin && typeof storage !== 'undefined') { %>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg); margin-bottom: var(--space-2xl);">
+        <div class="card" style="border-top: 2px solid var(--orange-500, #f97316);">
+          <div style="font-size: 0.8125rem; color: var(--neutral-500);">Total Files (All Tenants)</div>
+          <div style="font-size: 1.75rem; font-weight: 700; color: var(--white); margin-top: var(--space-xs);"><%= storage.totalFiles %></div>
+          <% if (storage.tenantCount) { %>
+            <div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: 2px;">across <%= storage.tenantCount %> tenant<%= storage.tenantCount > 1 ? 's' : '' %></div>
+          <% } %>
+        </div>
+        <div class="card" style="border-top: 2px solid var(--blue-400, #7dd99a);">
+          <div style="font-size: 0.8125rem; color: var(--neutral-500);">DB File Size (Recorded)</div>
+          <%
+            var dbBytes = storage.totalBytes || 0;
+            var dbDisplay = dbBytes < 1024 ? dbBytes + ' B'
+              : dbBytes < 1048576 ? (dbBytes / 1024).toFixed(1) + ' KB'
+              : dbBytes < 1073741824 ? (dbBytes / 1048576).toFixed(1) + ' MB'
+              : (dbBytes / 1073741824).toFixed(2) + ' GB';
+          %>
+          <div style="font-size: 1.75rem; font-weight: 700; color: var(--white); margin-top: var(--space-xs);"><%= dbDisplay %></div>
+          <div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: 2px;">from upload metadata</div>
+        </div>
+        <div class="card" style="border-top: 2px solid var(--success, #22c55e);">
+          <div style="font-size: 0.8125rem; color: var(--neutral-500);">Disk Usage (uploads/)</div>
+          <%
+            var diskBytes = storage.diskUsage;
+            var diskDisplay = diskBytes == null ? 'N/A'
+              : diskBytes < 1024 ? diskBytes + ' B'
+              : diskBytes < 1048576 ? (diskBytes / 1024).toFixed(1) + ' KB'
+              : diskBytes < 1073741824 ? (diskBytes / 1048576).toFixed(1) + ' MB'
+              : (diskBytes / 1073741824).toFixed(2) + ' GB';
+          %>
+          <div style="font-size: 1.75rem; font-weight: 700; color: var(--white); margin-top: var(--space-xs);"><%= diskDisplay %></div>
+          <div style="font-size: 0.75rem; color: var(--neutral-500); margin-top: 2px;">actual disk consumption</div>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (typeof isAdmin !== 'undefined' && isAdmin && typeof tenantSummary !== 'undefined' && tenantSummary.length > 0) { %>
+      <div class="card" style="margin-bottom: var(--space-2xl);">
+        <div class="card-header">
+          <span class="card-title">Tenant Summary</span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Tenant</th>
+                <th style="text-align: right;">Files</th>
+                <th style="text-align: right;">Processed</th>
+                <th style="text-align: right;">Searches</th>
+                <th style="text-align: right;">Storage</th>
+                <th style="text-align: right;">LLM Cost (est.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% tenantSummary.forEach(function(t) {
+                var bytes = parseInt(t.storage_bytes) || 0;
+                var sizeDisplay = bytes < 1024 ? bytes + ' B'
+                  : bytes < 1048576 ? (bytes / 1024).toFixed(1) + ' KB'
+                  : bytes < 1073741824 ? (bytes / 1048576).toFixed(1) + ' MB'
+                  : (bytes / 1073741824).toFixed(2) + ' GB';
+                var tokens = parseInt(t.total_tokens) || 0;
+                var cost = (tokens / 1000000 * 5).toFixed(2);
+              %>
+              <tr>
+                <td><%= t.name %></td>
+                <td style="text-align: right;"><%= t.files %></td>
+                <td style="text-align: right;"><%= t.processed %></td>
+                <td style="text-align: right;"><%= t.searches %></td>
+                <td style="text-align: right;"><%= sizeDisplay %></td>
+                <td style="text-align: right;">$<%= cost %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Activity</span>
+          <a href="/dashboard/audit" class="btn btn-sm btn-outline">View All</a>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th>User</th>
+                <th>Entity</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (recentActivity && recentActivity.length > 0) { %>
+                <% recentActivity.forEach(log => { %>
+                  <tr>
+                    <td><span class="badge badge-info"><%= log.action %></span></td>
+                    <td><%= log.user_email || 'System' %></td>
+                    <td><%= log.entity_type || '—' %></td>
+                    <td><%= formatDate(log.created_at) %></td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="4" style="text-align: center; color: var(--neutral-500);">No recent activity</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<%- include('partials/footer') %>

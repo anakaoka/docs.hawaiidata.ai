@@ -1,0 +1,107 @@
+<%- include('partials/header') %>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <div style="padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.25rem; border-bottom: 1px solid var(--neutral-700, #374151);">
+          <span style="display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(249, 115, 22, 0.15); color: var(--orange-400, #fb923c); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 3px;">Admin</span>
+        </div>
+      <% } %>
+      <ul class="sidebar-nav">
+        <li><a href="/dashboard">&#128202; Overview</a></li>
+        <li><a href="/dashboard/documents">&#128196; Documents</a></li>
+        <li><a href="/dashboard/search">&#128269; Search</a></li>
+        <li><a href="/dashboard/upload">&#128228; Upload</a></li>
+        <li><a href="/dashboard/audit">&#128203; Audit Log</a></li>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+          <li><a href="/dashboard/tenants">&#127970; Tenants</a></li>
+        <% } %>
+        <li><a href="/dashboard/settings">&#9881; Settings</a></li>
+        <li><a href="/dashboard/suggestions">&#128161; Suggestions</a></li>
+        <li><a href="/dashboard/token-usage" class="active">&#9889; Token Usage</a></li>
+      </ul>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <h1>AI Token Usage</h1>
+      </div>
+
+      <!-- Totals -->
+      <div class="stats-grid" style="margin-bottom: var(--space-xl);">
+        <div class="stat-card">
+          <div class="stat-value"><%= totals && totals.grand_total ? Number(totals.grand_total).toLocaleString() : '0' %></div>
+          <div class="stat-label">Total Tokens Used</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value"><%= totals && totals.total_calls ? Number(totals.total_calls).toLocaleString() : '0' %></div>
+          <div class="stat-label">Total API Calls</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">$<%= totals && totals.grand_total ? (Number(totals.grand_total) * 0.0000025).toFixed(2) : '0.00' %></div>
+          <div class="stat-label">Est. Cost (GPT-4o input)</div>
+        </div>
+      </div>
+
+      <!-- Usage by Action -->
+      <div class="card" style="margin-bottom: var(--space-xl);">
+        <h3 style="margin-bottom: var(--space-md);">Usage by Action</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <% if (typeof isAdminView !== 'undefined' && isAdminView) { %><th>Tenant</th><% } %>
+                <th>Action</th>
+                <th>API Calls</th>
+                <th>Total Tokens</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (summary && summary.length > 0) { %>
+                <% summary.forEach(row => { %>
+                  <tr>
+                    <% if (typeof isAdminView !== 'undefined' && isAdminView) { %><td><%= row.tenant_name %></td><% } %>
+                    <td style="color: var(--white);"><%= row.action.replace(/_/g, ' ') %></td>
+                    <td><%= Number(row.call_count).toLocaleString() %></td>
+                    <td><%= Number(row.total_tokens).toLocaleString() %></td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="<%= (typeof isAdminView !== 'undefined' && isAdminView) ? 4 : 3 %>" style="text-align:center;">No token usage recorded yet.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Daily Usage (last 30 days) -->
+      <div class="card">
+        <h3 style="margin-bottom: var(--space-md);">Daily Usage (Last 30 Days)</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>API Calls</th>
+                <th>Tokens</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (daily && daily.length > 0) { %>
+                <% daily.forEach(row => { %>
+                  <tr>
+                    <td style="color: var(--white);"><%= new Date(row.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+                    <td><%= Number(row.calls).toLocaleString() %></td>
+                    <td><%= Number(row.tokens).toLocaleString() %></td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="3" style="text-align:center;">No recent usage data.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<%- include('partials/footer') %>

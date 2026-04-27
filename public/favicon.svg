@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Document body -->
+  <path d="M 12 6 H 38 L 52 20 V 56 a 2 2 0 0 1 -2 2 H 14 a 2 2 0 0 1 -2 -2 Z" fill="#2DB252"/>
+  <!-- Document fold -->
+  <path d="M 38 6 V 18 a 2 2 0 0 0 2 2 H 52 Z" fill="#F4C225"/>
+  <!-- Document lines -->
+  <rect x="18" y="28" width="22" height="2.4" rx="1.2" fill="#ffffff" opacity="0.85"/>
+  <rect x="18" y="33" width="28" height="2.4" rx="1.2" fill="#ffffff" opacity="0.85"/>
+  <!-- Lock body -->
+  <rect x="22" y="40" width="20" height="14" rx="2.5" fill="#F45F25"/>
+  <!-- Lock shackle -->
+  <path d="M 26 40 V 36 a 6 6 0 0 1 12 0 V 40" fill="none" stroke="#F45F25" stroke-width="2.8" stroke-linecap="round"/>
+  <!-- Keyhole -->
+  <circle cx="32" cy="46" r="1.8" fill="#ffffff"/>
+  <rect x="31.1" y="46" width="1.8" height="4" rx="0.9" fill="#ffffff"/>
+</svg>

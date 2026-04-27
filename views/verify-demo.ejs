@@ -1,0 +1,226 @@
+<%- include('partials/header') %>
+
+  <div class="verify-page">
+    <div class="verify-card">
+      <div class="feature-icon orange" style="margin: 0 auto var(--space-lg); width: 64px; height: 64px; font-size: 2rem;">&#128241;</div>
+      <h2>SMS Verification Demo</h2>
+      <p class="verify-desc">Add an extra layer of confirmation before releasing sensitive documents. We send a one-time verification code by SMS to confirm the user has access to an approved mobile number before secure document access, report delivery, or other sensitive actions.</p>
+
+      <div class="alert alert-info" style="background: rgba(45, 178, 82, 0.1); border: 1px solid rgba(45, 178, 82, 0.2); color: var(--blue-300); text-align: left; font-size: 0.8125rem;">
+        <strong>Demo Feature:</strong> This demonstrates multi-factor authentication capabilities for high-security document workflows.
+      </div>
+
+      <!-- Step 1: Phone number input -->
+      <div id="step-phone">
+        <div class="form-group" style="text-align: left;">
+          <label for="phone">Mobile Phone Number</label>
+          <input type="tel" id="phone" class="form-input" placeholder="+1 (808) 555-1234">
+        </div>
+        <button class="btn btn-accent" style="width: 100%;" id="send-btn">Send Verification Code</button>
+      </div>
+
+      <!-- Step 2: Code input -->
+      <div id="step-code" style="display: none;">
+        <p style="color: var(--neutral-400); font-size: 0.875rem; margin-bottom: var(--space-lg);">Enter the 6-digit code sent to <span id="masked-phone" style="color: var(--white);"></span></p>
+        <div style="margin-bottom: var(--space-lg);">
+          <input type="text" id="otp-single" autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="[0-9]*"
+            style="width: 100%; max-width: 280px; margin: 0 auto; display: block; text-align: center; font-family: 'Courier New', monospace; font-size: 2rem; letter-spacing: 0.75rem; padding: 0.75rem 1rem; background: var(--neutral-800); border: 2px solid var(--neutral-600); border-radius: var(--radius-md); color: var(--white); outline: none; transition: border-color 0.2s;"
+            placeholder="------">
+        </div>
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: var(--space-md);" id="verify-btn">Verify Code</button>
+        <button class="btn btn-outline btn-sm" id="resend-btn">Resend Code</button>
+      </div>
+
+      <!-- Step 3: Result -->
+      <div id="step-result" style="display: none;">
+        <div id="result-icon" style="font-size: 4rem; margin-bottom: var(--space-md);"></div>
+        <h3 id="result-title" style="color: var(--white); margin-bottom: var(--space-sm);"></h3>
+        <p id="result-message" style="color: var(--neutral-400); margin-bottom: var(--space-xl);"></p>
+        <button class="btn btn-outline" id="reset-btn">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentPhone = '';
+
+    function formatPhone(phone) {
+      // Strip non-digits, ensure +1 prefix for US numbers
+      let digits = phone.replace(/\D/g, '');
+      if (digits.length === 10) digits = '1' + digits;
+      return '+' + digits;
+    }
+
+    function maskPhone(phone) {
+      if (phone.length > 4) {
+        return phone.slice(0, -4).replace(/./g, '*') + phone.slice(-4);
+      }
+      return phone;
+    }
+
+    async function sendCode() {
+      const phone = document.getElementById('phone').value.trim();
+      if (!phone) return;
+
+      currentPhone = formatPhone(phone);
+      const btn = document.getElementById('send-btn');
+      btn.textContent = 'Sending...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/verify/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: currentPhone })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('step-phone').style.display = 'none';
+          document.getElementById('step-code').style.display = 'block';
+          document.getElementById('masked-phone').textContent = maskPhone(currentPhone);
+          document.getElementById('otp-single').focus();
+        } else {
+          alert(data.message || 'Failed to send code. Please try again.');
+          btn.textContent = 'Send Verification Code';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        alert('Error sending code. Please try again.');
+        btn.textContent = 'Send Verification Code';
+        btn.disabled = false;
+      }
+    }
+
+    async function verifyCode() {
+      const otpInput = document.getElementById('otp-single');
+      const code = otpInput.value.replace(/\D/g, '');
+
+      // Validate all 6 digits are entered
+      if (code.length !== 6) {
+        otpInput.style.borderColor = 'var(--error, #ef4444)';
+        setTimeout(() => { otpInput.style.borderColor = ''; }, 2000);
+        return;
+      }
+
+      const btn = document.getElementById('verify-btn');
+      btn.textContent = 'Verifying...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/verify/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: currentPhone, code })
+        });
+        const data = await res.json();
+
+        document.getElementById('step-code').style.display = 'none';
+        document.getElementById('step-result').style.display = 'block';
+
+        if (data.success) {
+          launchConfetti();
+          document.getElementById('result-icon').innerHTML = '&#127881;';
+          document.getElementById('result-title').textContent = "You're Verified!";
+          document.getElementById('result-message').innerHTML = 'Identity confirmed — you now have access to secure documents and sensitive actions.<br><br><a href="/dashboard" class="btn btn-primary" style="margin-top:0.5rem;">Go to Dashboard</a>';
+        } else {
+          document.getElementById('result-icon').textContent = '\u274C';
+          document.getElementById('result-title').textContent = 'Verification Failed';
+          document.getElementById('result-title').style.color = 'var(--error)';
+          document.getElementById('result-message').textContent = data.message || 'The code entered was incorrect or has expired. Please try again.';
+        }
+      } catch (err) {
+        btn.textContent = 'Verify Code';
+        btn.disabled = false;
+        alert('Error verifying code. Please try again.');
+      }
+    }
+
+    async function resendCode() {
+      const btn = document.getElementById('resend-btn');
+      btn.textContent = 'Sending...';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/verify/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: currentPhone })
+        });
+        const data = await res.json();
+        if (data.success) {
+          btn.textContent = 'Code Resent!';
+          setTimeout(() => { btn.textContent = 'Resend Code'; btn.disabled = false; }, 3000);
+        } else {
+          alert(data.message || 'Failed to resend. Try again.');
+          btn.textContent = 'Resend Code';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        alert('Error resending code.');
+        btn.textContent = 'Resend Code';
+        btn.disabled = false;
+      }
+    }
+
+    function resetDemo() {
+      document.getElementById('step-result').style.display = 'none';
+      document.getElementById('step-phone').style.display = 'block';
+      document.getElementById('send-btn').textContent = 'Send Verification Code';
+      document.getElementById('send-btn').disabled = false;
+      document.getElementById('phone').value = '';
+      document.getElementById('otp-single').value = '';
+      document.getElementById('result-title').style.color = 'var(--white)';
+    }
+
+    function launchConfetti() {
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden;';
+      document.body.appendChild(container);
+      const emojis = ['&#127881;', '&#127880;', '&#127882;', '&#9989;', '&#11088;', '&#128079;', '&#127870;', '&#128640;'];
+      const colors = ['#f97316', '#2DB252', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
+      for (let i = 0; i < 80; i++) {
+        const el = document.createElement('div');
+        const isEmoji = Math.random() > 0.5;
+        if (isEmoji) {
+          el.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
+          el.style.cssText = `position:absolute;font-size:${16 + Math.random() * 24}px;left:${Math.random() * 100}%;top:-40px;opacity:0;`;
+        } else {
+          el.style.cssText = `position:absolute;width:${6 + Math.random() * 8}px;height:${6 + Math.random() * 8}px;background:${colors[Math.floor(Math.random() * colors.length)]};border-radius:${Math.random() > 0.5 ? '50%' : '2px'};left:${Math.random() * 100}%;top:-20px;opacity:0;`;
+        }
+        container.appendChild(el);
+        const delay = Math.random() * 1500;
+        const duration = 2000 + Math.random() * 2000;
+        const drift = -100 + Math.random() * 200;
+        const spin = Math.random() * 720 - 360;
+        el.animate([
+          { transform: `translateY(0) translateX(0) rotate(0deg) scale(0)`, opacity: 0 },
+          { transform: `translateY(40px) translateX(${drift * 0.2}px) rotate(${spin * 0.2}deg) scale(1)`, opacity: 1, offset: 0.1 },
+          { transform: `translateY(${window.innerHeight + 100}px) translateX(${drift}px) rotate(${spin}deg) scale(${0.5 + Math.random() * 0.5})`, opacity: 0 }
+        ], { duration, delay, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' });
+      }
+      setTimeout(() => container.remove(), 5000);
+    }
+
+    // Button event listeners (avoid inline onclick for browser extension compatibility)
+    document.getElementById('send-btn').addEventListener('click', sendCode);
+    document.getElementById('verify-btn').addEventListener('click', verifyCode);
+    document.getElementById('resend-btn').addEventListener('click', resendCode);
+    document.getElementById('reset-btn').addEventListener('click', resetDemo);
+
+    // Focus OTP input and strip non-digits on input
+    const otpInput = document.getElementById('otp-single');
+    otpInput.addEventListener('input', () => {
+      otpInput.value = otpInput.value.replace(/\D/g, '').slice(0, 6);
+      if (otpInput.value.length === 6) {
+        otpInput.style.borderColor = 'var(--primary, #4cc46e)';
+      }
+    });
+    otpInput.addEventListener('focus', () => {
+      otpInput.style.borderColor = 'var(--primary, #4cc46e)';
+    });
+    otpInput.addEventListener('blur', () => {
+      otpInput.style.borderColor = '';
+    });
+  </script>
+
+<%- include('partials/footer') %>

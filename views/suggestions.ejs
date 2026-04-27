@@ -1,0 +1,231 @@
+<%- include('partials/header') %>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <div style="padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.25rem; border-bottom: 1px solid var(--neutral-700, #374151);">
+          <span style="display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(249, 115, 22, 0.15); color: var(--orange-400, #fb923c); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 3px;">Admin</span>
+        </div>
+      <% } %>
+      <ul class="sidebar-nav">
+        <li><a href="/dashboard">&#128202; Overview</a></li>
+        <li><a href="/dashboard/documents">&#128196; Documents</a></li>
+        <li><a href="/dashboard/search">&#128269; Search</a></li>
+        <li><a href="/dashboard/upload">&#128228; Upload</a></li>
+        <li><a href="/dashboard/audit">&#128203; Audit Log</a></li>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+          <li><a href="/dashboard/tenants">&#127970; Tenants</a></li>
+        <% } %>
+        <li><a href="/dashboard/settings">&#9881; Settings</a></li>
+        <li><a href="/dashboard/suggestions" class="active">&#128161; Suggestions</a></li>
+        <li><a href="/dashboard/token-usage">&#9889; Token Usage</a></li>
+      </ul>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Submit a Suggestion</h1>
+        <p style="color: var(--neutral-400); margin-top: 0.25rem; font-size: 0.9375rem;">
+          Have an idea or feedback for the platform? Share it below and we'll send a polished message to our team.
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom: var(--space-lg);">
+        <div class="form-group">
+          <label for="suggestion-text" style="font-size: 0.9375rem; font-weight: 600; color: var(--neutral-200);">Your Suggestion</label>
+          <textarea
+            id="suggestion-text"
+            class="form-input"
+            rows="6"
+            placeholder="What would you like to see improved or added?"
+            style="resize: vertical; font-size: 0.9375rem; line-height: 1.6;"
+          ></textarea>
+        </div>
+        <button id="generate-btn" class="btn btn-primary" type="button">
+          &#10024; Generate Email
+        </button>
+        <span id="generate-status" style="margin-left: 0.75rem; font-size: 0.875rem;"></span>
+      </div>
+
+      <div id="preview-section" style="display: none;">
+        <div class="card" style="margin-bottom: var(--space-lg); border-top: 2px solid var(--orange-500, #f97316);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md);">
+            <h3 style="margin: 0; color: var(--white); font-size: 1rem;">&#9993; Email Preview</h3>
+            <span style="font-size: 0.8125rem; color: var(--neutral-500);">AI-polished draft — review before sending</span>
+          </div>
+
+          <div class="form-group">
+            <label for="email-subject" style="font-size: 0.875rem; font-weight: 600; color: var(--neutral-300);">Subject</label>
+            <input
+              type="text"
+              id="email-subject"
+              class="form-input"
+              style="font-size: 0.9375rem;"
+            >
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="email-body" style="font-size: 0.875rem; font-weight: 600; color: var(--neutral-300);">Email Body</label>
+            <textarea
+              id="email-body"
+              class="form-input"
+              rows="10"
+              style="resize: vertical; font-size: 0.9375rem; line-height: 1.6;"
+            ></textarea>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
+          <button id="send-btn" class="btn btn-primary" type="button">
+            &#9993; Accept &amp; Send
+          </button>
+          <button id="edit-btn" class="btn btn-outline" type="button">
+            &#9998; Edit
+          </button>
+          <span id="send-status" style="font-size: 0.875rem;"></span>
+        </div>
+      </div>
+
+      <div id="success-section" style="display: none;">
+        <div class="card" style="border-top: 2px solid var(--success, #22c55e); text-align: center; padding: var(--space-xl);">
+          <div style="font-size: 3rem; margin-bottom: var(--space-md);">&#9989;</div>
+          <h3 style="color: var(--white); margin-bottom: var(--space-sm);">Suggestion Sent!</h3>
+          <p style="color: var(--neutral-400); font-size: 0.9375rem; margin-bottom: var(--space-lg);">
+            Your feedback has been sent to the HawaiiData team. Thank you for helping improve the platform.
+          </p>
+          <button id="new-suggestion-btn" class="btn btn-outline" type="button">
+            Submit Another Suggestion
+          </button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    var previewSection = document.getElementById('preview-section');
+    var successSection = document.getElementById('success-section');
+    var generateBtn = document.getElementById('generate-btn');
+    var generateStatus = document.getElementById('generate-status');
+    var sendBtn = document.getElementById('send-btn');
+    var editBtn = document.getElementById('edit-btn');
+    var sendStatus = document.getElementById('send-status');
+    var emailBody = document.getElementById('email-body');
+    var emailSubject = document.getElementById('email-subject');
+    var newSuggestionBtn = document.getElementById('new-suggestion-btn');
+
+    // Initially make body read-only; Edit button toggles editing
+    emailBody.readOnly = true;
+    emailSubject.readOnly = true;
+
+    generateBtn.addEventListener('click', async function() {
+      var text = document.getElementById('suggestion-text').value.trim();
+      if (!text) {
+        generateStatus.textContent = 'Please enter a suggestion first.';
+        generateStatus.style.color = 'var(--warning, #f59e0b)';
+        return;
+      }
+
+      generateBtn.disabled = true;
+      generateStatus.textContent = 'Generating...';
+      generateStatus.style.color = 'var(--neutral-400)';
+      previewSection.style.display = 'none';
+      successSection.style.display = 'none';
+
+      try {
+        var res = await fetch('/dashboard/suggestions/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+        var data = await res.json();
+
+        if (!res.ok || data.error) {
+          generateStatus.textContent = data.error || 'Failed to generate email.';
+          generateStatus.style.color = 'var(--error, #ef4444)';
+          generateBtn.disabled = false;
+          return;
+        }
+
+        emailSubject.value = data.subject;
+        emailBody.value = data.body;
+        emailBody.readOnly = true;
+        emailSubject.readOnly = true;
+
+        previewSection.style.display = 'block';
+        generateStatus.textContent = '';
+      } catch (err) {
+        generateStatus.textContent = 'Something went wrong. Please try again.';
+        generateStatus.style.color = 'var(--error, #ef4444)';
+      }
+
+      generateBtn.disabled = false;
+    });
+
+    editBtn.addEventListener('click', function() {
+      emailBody.readOnly = false;
+      emailSubject.readOnly = false;
+      emailBody.style.background = '';
+      emailSubject.style.background = '';
+      emailBody.focus();
+      sendStatus.textContent = 'Editing enabled — make your changes above.';
+      sendStatus.style.color = 'var(--neutral-400)';
+    });
+
+    sendBtn.addEventListener('click', async function() {
+      var subject = emailSubject.value.trim();
+      var body = emailBody.value.trim();
+
+      if (!subject || !body) {
+        sendStatus.textContent = 'Subject and body cannot be empty.';
+        sendStatus.style.color = 'var(--warning, #f59e0b)';
+        return;
+      }
+
+      sendBtn.disabled = true;
+      editBtn.disabled = true;
+      sendStatus.textContent = 'Sending...';
+      sendStatus.style.color = 'var(--neutral-400)';
+
+      try {
+        var res = await fetch('/dashboard/suggestions/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject: subject, body: body })
+        });
+        var data = await res.json();
+
+        if (!res.ok || data.error) {
+          sendStatus.textContent = data.error || 'Failed to send email.';
+          sendStatus.style.color = 'var(--error, #ef4444)';
+          sendBtn.disabled = false;
+          editBtn.disabled = false;
+          return;
+        }
+
+        previewSection.style.display = 'none';
+        successSection.style.display = 'block';
+      } catch (err) {
+        sendStatus.textContent = 'Something went wrong. Please try again.';
+        sendStatus.style.color = 'var(--error, #ef4444)';
+        sendBtn.disabled = false;
+        editBtn.disabled = false;
+      }
+    });
+
+    newSuggestionBtn.addEventListener('click', function() {
+      document.getElementById('suggestion-text').value = '';
+      emailSubject.value = '';
+      emailBody.value = '';
+      emailBody.readOnly = true;
+      emailSubject.readOnly = true;
+      previewSection.style.display = 'none';
+      successSection.style.display = 'none';
+      sendStatus.textContent = '';
+      generateStatus.textContent = '';
+      generateBtn.disabled = false;
+      sendBtn.disabled = false;
+      editBtn.disabled = false;
+    });
+  </script>
+
+<%- include('partials/footer') %>
