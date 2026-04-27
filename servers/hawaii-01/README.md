@@ -1,14 +1,18 @@
-# hawaii-01 — `208.83.236.97`
+# hawaii-01
 
 Production server hosting docs.hawaiidata.ai. **Slated for deprecation.** This
 directory is the rebuild record so it can be brought back at any time.
+
+> This repo is public. The server's public IP, hostname, and any other
+> identifying detail are kept in the secret store referenced in
+> [`secrets.md`](secrets.md) — never committed here.
 
 ## At a glance
 
 | | |
 |---|---|
-| Hostname | _to be filled from snapshot_ |
-| Public IP | `208.83.236.97` |
+| Hostname | _see secret store_ |
+| Public IP | _see secret store_ |
 | Role | Production web/app server for docs.hawaiidata.ai |
 | Provider | _to be filled_ |
 | OS | _to be filled from snapshot_ |
@@ -16,8 +20,9 @@ directory is the rebuild record so it can be brought back at any time.
 
 ## Access
 
-- SSH: `ssh root@208.83.236.97` (key-based; password auth should be disabled —
-  verify in [`snapshots/`](snapshots/) → `access/etc/sshd_config`).
+- SSH: `ssh root@<server-ip>` — IP from secret store. Key-based only;
+  password auth should be disabled (verify in [`snapshots/`](snapshots/)
+  → `access/etc/sshd_config`).
 - Authorized public keys: [`snapshots/2026-04-27/access/authorized_keys.txt`](snapshots/2026-04-27/access/authorized_keys.txt)
   (once captured).
 

@@ -30,9 +30,9 @@ YYYY-MM-DD/
    bash /path/to/capture-server.sh
    # → /root/server-snapshot-YYYY-MM-DD.tar.gz
    ```
-2. Pull back to your laptop:
+2. Pull back to your laptop (IP from secret store):
    ```bash
-   scp root@208.83.236.97:/root/server-snapshot-YYYY-MM-DD.tar.gz .
+   scp root@<server-ip>:/root/server-snapshot-YYYY-MM-DD.tar.gz .
    ```
 3. Extract under this directory:
    ```bash

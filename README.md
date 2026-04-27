@@ -63,6 +63,6 @@ This repo holds operational documentation for the platform.
 
 ## Status
 
-Documenting the current production server (`hawaii-01`, `208.83.236.97`)
-ahead of deprecation so it can be reconstituted on demand. See
+Documenting the current production server (`hawaii-01`) ahead of
+deprecation so it can be reconstituted on demand. See
 [`servers/hawaii-01/`](servers/hawaii-01/).

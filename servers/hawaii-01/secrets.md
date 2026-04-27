@@ -13,6 +13,7 @@ committed snapshot, rotate it immediately and rewrite history.
 
 | Item | Where on the server | Storage location for values |
 |---|---|---|
+| Public IP / hostname | n/a (public) | Treated as sensitive because this repo is public; values live in the password manager |
 | SSH host private keys | `/etc/ssh/ssh_host_*_key` | New host generates fresh; old fingerprints recorded in restore log |
 | SSH user private keys | `/root/.ssh/id_*`, `/home/*/.ssh/id_*` | Per-user password manager |
 | Let's Encrypt private keys | `/etc/letsencrypt/live/*/privkey.pem` | Reissued on restore (preferred), or encrypted backup |
