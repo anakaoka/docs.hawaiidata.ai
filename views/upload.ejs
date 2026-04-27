@@ -1,0 +1,101 @@
+<%- include('partials/header') %>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <div style="padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.25rem; border-bottom: 1px solid var(--neutral-700, #374151);">
+          <span style="display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(249, 115, 22, 0.15); color: var(--orange-400, #fb923c); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 3px;">Admin</span>
+        </div>
+      <% } %>
+      <ul class="sidebar-nav">
+        <li><a href="/dashboard">&#128202; Overview</a></li>
+        <li><a href="/dashboard/documents">&#128196; Documents</a></li>
+        <li><a href="/dashboard/search">&#128269; Search</a></li>
+        <li><a href="/dashboard/upload" class="active">&#128228; Upload</a></li>
+        <li><a href="/dashboard/audit">&#128203; Audit Log</a></li>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+          <li><a href="/dashboard/tenants">&#127970; Tenants</a></li>
+        <% } %>
+        <li><a href="/dashboard/settings">&#9881; Settings</a></li>
+        <li><a href="/dashboard/suggestions">&#128161; Suggestions</a></li>
+        <li><a href="/dashboard/token-usage">&#9889; Token Usage</a></li>
+      </ul>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Upload Documents</h1>
+      </div>
+
+      <% if (typeof message !== 'undefined' && message) { %>
+        <div class="alert alert-success"><%= message %></div>
+      <% } %>
+
+      <div class="card">
+        <form action="/api/documents/upload" method="POST" enctype="multipart/form-data" id="upload-form">
+          <div class="upload-area" id="drop-area" onclick="document.getElementById('file-input').click()">
+            <div class="upload-icon">&#128228;</div>
+            <h3>Drop files here or click to browse</h3>
+            <p>Supports PDF, TIFF — up to 50MB per file</p>
+            <input type="file" id="file-input" name="documents" multiple accept=".pdf,.tiff,.tif" style="display: none;" onchange="handleFiles(this.files)">
+          </div>
+
+          <div id="file-list" style="margin-top: var(--space-lg);"></div>
+
+          <div class="form-group" style="margin-top: var(--space-lg);">
+            <label for="project-name">Project Name (optional)</label>
+            <input type="text" id="project-name" name="project_name" class="form-input" placeholder="e.g. 123 Main St Closing, Q1 Audit, Smith Estate..." list="project-suggestions">
+            <datalist id="project-suggestions"></datalist>
+          </div>
+
+          <div class="form-group" style="margin-top: var(--space-md);">
+            <label for="property-search">Link to Property (optional)</label>
+            <input type="text" id="property-search" class="form-input" placeholder="Search by TMK or address...">
+            <input type="hidden" name="property_id" id="property-id">
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: var(--space-md);" id="upload-btn" disabled>Upload & Process</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const dropArea = document.getElementById('drop-area');
+    ['dragenter', 'dragover'].forEach(e => {
+      dropArea.addEventListener(e, (ev) => { ev.preventDefault(); dropArea.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(e => {
+      dropArea.addEventListener(e, (ev) => { ev.preventDefault(); dropArea.classList.remove('dragover'); });
+    });
+    dropArea.addEventListener('drop', (e) => {
+      document.getElementById('file-input').files = e.dataTransfer.files;
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // Load existing project names for autocomplete
+    fetch('/api/documents/projects')
+      .then(r => r.json())
+      .then(projects => {
+        const dl = document.getElementById('project-suggestions');
+        projects.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p;
+          dl.appendChild(opt);
+        });
+      })
+      .catch(() => {});
+
+    function handleFiles(files) {
+      const list = document.getElementById('file-list');
+      list.innerHTML = '';
+      Array.from(files).forEach(f => {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding: 0.5rem 0; color: var(--neutral-300); font-size: 0.875rem; border-bottom: 1px solid var(--neutral-700);';
+        div.textContent = `${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`;
+        list.appendChild(div);
+      });
+      document.getElementById('upload-btn').disabled = files.length === 0;
+    }
+  </script>
+
+<%- include('partials/footer') %>

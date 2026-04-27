@@ -1,0 +1,223 @@
+<%- include('partials/header') %>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <div style="padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.25rem; border-bottom: 1px solid var(--neutral-700, #374151);">
+          <span style="display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(249, 115, 22, 0.15); color: var(--orange-400, #fb923c); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 3px;">Admin</span>
+        </div>
+      <% } %>
+      <ul class="sidebar-nav">
+        <li><a href="/dashboard">&#128202; Overview</a></li>
+        <li><a href="/dashboard/documents">&#128196; Documents</a></li>
+        <li><a href="/dashboard/search" class="active">&#128269; Search</a></li>
+        <li><a href="/dashboard/upload">&#128228; Upload</a></li>
+        <li><a href="/dashboard/audit">&#128203; Audit Log</a></li>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+          <li><a href="/dashboard/tenants">&#127970; Tenants</a></li>
+        <% } %>
+        <li><a href="/dashboard/settings">&#9881; Settings</a></li>
+        <li><a href="/dashboard/suggestions">&#128161; Suggestions</a></li>
+        <li><a href="/dashboard/token-usage">&#9889; Token Usage</a></li>
+      </ul>
+    </aside>
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Search Documents</h1>
+      </div>
+
+      <div class="card" style="margin-bottom: var(--space-md);">
+        <div id="filter-toggle" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 0;">
+          <strong style="color: var(--neutral-300); font-size: 0.875rem;">&#9660; Search Filters</strong>
+          <span id="filter-toggle-icon" style="color: var(--neutral-500); font-size: 0.75rem;">Hide</span>
+        </div>
+        <div id="filter-panel" style="margin-top: var(--space-md);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-md);">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filter-date-from" style="font-size: 0.8125rem;">Date From</label>
+              <input type="date" id="filter-date-from" class="form-input" style="font-size: 0.875rem;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filter-date-to" style="font-size: 0.8125rem;">Date To</label>
+              <input type="date" id="filter-date-to" class="form-input" style="font-size: 0.875rem;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="filter-doc-type" style="font-size: 0.8125rem;">Document Type</label>
+              <select id="filter-doc-type" class="form-input" style="font-size: 0.875rem;">
+                <option value="">All</option>
+                <option value="deed">Deed</option>
+                <option value="trust">Trust</option>
+                <option value="lien">Lien</option>
+                <option value="closing statement">Closing Statement</option>
+                <option value="invoice">Invoice</option>
+                <option value="tax form">Tax Form</option>
+                <option value="release">Release</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: var(--space-md); margin-bottom: 0;">
+            <label for="filter-address-tmk" style="font-size: 0.8125rem;">Address / TMK</label>
+            <input type="text" id="filter-address-tmk" class="form-input" placeholder="e.g. 123 Ala Moana Blvd or 1-2-003-045" style="font-size: 0.875rem;">
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: var(--space-xl);">
+        <form id="search-form">
+          <div class="form-group">
+            <label for="query">Natural Language Search</label>
+            <input type="text" id="query" class="form-input" placeholder='Try: "show liens on this property" or "documents uploaded last week"' style="font-size: 1rem; padding: 1rem;">
+          </div>
+          <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+      </div>
+
+      <div id="ai-summary" style="display:none;"></div>
+
+      <div id="email-section" style="display:none; margin-bottom: var(--space-md);">
+        <button id="email-results-btn" class="btn btn-outline" type="button">&#9993; Email Results</button>
+        <span id="email-status" style="margin-left: 0.75rem; font-size: 0.875rem;"></span>
+      </div>
+
+      <div id="results"></div>
+    </main>
+  </div>
+
+  <script>
+    var lastSearchQuery = '';
+    var lastAiSummary = '';
+    var lastResultIds = [];
+
+    // Filter panel toggle
+    document.getElementById('filter-toggle').addEventListener('click', function() {
+      var panel = document.getElementById('filter-panel');
+      var icon = document.getElementById('filter-toggle-icon');
+      if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        icon.textContent = 'Hide';
+      } else {
+        panel.style.display = 'none';
+        icon.textContent = 'Show';
+      }
+    });
+
+    document.getElementById('search-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var query = document.getElementById('query').value.trim();
+      if (!query) return;
+
+      var resultsDiv = document.getElementById('results');
+      var summaryDiv = document.getElementById('ai-summary');
+      var emailSection = document.getElementById('email-section');
+      var emailStatus = document.getElementById('email-status');
+
+      resultsDiv.innerHTML = '<p style="color: var(--neutral-400);">Searching...</p>';
+      summaryDiv.style.display = 'none';
+      summaryDiv.innerHTML = '';
+      emailSection.style.display = 'none';
+      emailStatus.textContent = '';
+
+      // Gather filter values
+      var dateFrom = document.getElementById('filter-date-from').value;
+      var dateTo = document.getElementById('filter-date-to').value;
+      var docType = document.getElementById('filter-doc-type').value;
+      var addressTmk = document.getElementById('filter-address-tmk').value.trim();
+
+      var payload = { query: query };
+      if (dateFrom) payload.date_from = dateFrom;
+      if (dateTo) payload.date_to = dateTo;
+      if (docType) payload.doc_type = docType;
+      if (addressTmk) payload.address_tmk = addressTmk;
+
+      try {
+        var res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        var data = await res.json();
+
+        lastSearchQuery = query;
+        lastAiSummary = data.aiSummary || '';
+        lastResultIds = (data.results || []).map(function(doc) { return doc.id; });
+
+        // Show AI summary
+        if (data.aiSummary) {
+          summaryDiv.innerHTML = '<div class="card" style="border-left: 4px solid #4cc46e; border-top: 1px solid #f97316; margin-bottom: var(--space-lg); background: rgba(76, 196, 110, 0.08);">' +
+            '<div style="display: flex; align-items: center; margin-bottom: 0.5rem;">' +
+            '<span style="font-size: 1.1rem; margin-right: 0.5rem;">&#129302;</span>' +
+            '<strong style="color: var(--white); font-size: 0.9375rem;">AI Summary</strong>' +
+            '</div>' +
+            '<p style="color: var(--neutral-300); font-size: 0.875rem; line-height: 1.5; margin: 0;">' + data.aiSummary + '</p>' +
+            '</div>';
+          summaryDiv.style.display = 'block';
+        }
+
+        if (data.results && data.results.length > 0) {
+          emailSection.style.display = 'block';
+
+          resultsDiv.innerHTML = data.results.map(function(doc) {
+            return '<div class="card" style="margin-bottom: var(--space-md);">' +
+              '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+              '<div>' +
+              '<strong style="color: var(--white);">' + doc.original_filename + '</strong>' +
+              '<span class="badge badge-' + (doc.status === 'processed' ? 'success' : 'warning') + '" style="margin-left: 0.5rem;">' + doc.status + '</span>' +
+              '<p style="color: var(--neutral-500); font-size: 0.8125rem; margin-top: 0.25rem;">' + new Date(doc.created_at).toLocaleString('en-US', { timeZone: 'Pacific/Honolulu', dateStyle: 'medium', timeStyle: 'short' }) + '</p>' +
+              '</div>' +
+              '<a href="/api/documents/' + doc.id + '/view" class="btn btn-sm btn-outline">View</a>' +
+              '</div>' +
+              (doc.snippet ? '<p style="color: var(--neutral-400); font-size: 0.875rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--neutral-700);">' + doc.snippet + '</p>' : '') +
+              '</div>';
+          }).join('');
+        } else {
+          resultsDiv.innerHTML = '<div class="card"><p style="color: var(--neutral-500); text-align: center;">No results found. Try a different query.</p></div>';
+        }
+      } catch (err) {
+        resultsDiv.innerHTML = '<div class="alert alert-error">Search failed. Please try again.</div>';
+      }
+    });
+
+    document.getElementById('email-results-btn').addEventListener('click', async function() {
+      var emailStatus = document.getElementById('email-status');
+      var btn = document.getElementById('email-results-btn');
+
+      if (lastResultIds.length === 0) {
+        emailStatus.textContent = 'No results to email.';
+        emailStatus.style.color = 'var(--warning)';
+        return;
+      }
+
+      btn.disabled = true;
+      emailStatus.textContent = 'Sending...';
+      emailStatus.style.color = 'var(--neutral-400)';
+
+      try {
+        var res = await fetch('/api/search/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: lastSearchQuery,
+            summary: lastAiSummary,
+            resultIds: lastResultIds
+          })
+        });
+        var data = await res.json();
+
+        if (data.success) {
+          emailStatus.textContent = data.message;
+          emailStatus.style.color = 'var(--success, #22c55e)';
+        } else {
+          emailStatus.textContent = data.error || 'Failed to send email.';
+          emailStatus.style.color = 'var(--error, #ef4444)';
+        }
+      } catch (err) {
+        emailStatus.textContent = 'Failed to send email. Please try again.';
+        emailStatus.style.color = 'var(--error, #ef4444)';
+      }
+
+      btn.disabled = false;
+    });
+  </script>
+
+<%- include('partials/footer') %>

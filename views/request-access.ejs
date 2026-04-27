@@ -1,0 +1,50 @@
+<%- include('partials/header') %>
+
+  <section class="section" style="padding-top: var(--space-4xl);">
+    <div class="section-container" style="max-width: 600px;">
+      <div class="section-header">
+        <h2 class="section-title">Request Access</h2>
+        <p class="section-subtitle">Fill out the form below and we'll get back to you shortly.</p>
+      </div>
+
+      <% if (typeof message !== 'undefined' && message) { %>
+        <div class="alert alert-success" style="background: rgba(34,197,94,0.1); border: 1px solid var(--success); color: var(--success); padding: var(--space-md); border-radius: var(--radius-md); margin-bottom: var(--space-xl); text-align: center;">
+          <%= message %>
+        </div>
+      <% } %>
+
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert alert-error" style="background: rgba(239,68,68,0.1); border: 1px solid var(--error); color: var(--error); padding: var(--space-md); border-radius: var(--radius-md); margin-bottom: var(--space-xl); text-align: center;">
+          <%= error %>
+        </div>
+      <% } %>
+
+      <div class="card" style="padding: var(--space-xl);">
+        <form method="POST" action="/request-access">
+          <div class="form-group" style="margin-bottom: var(--space-lg);">
+            <label for="full_name" style="display: block; margin-bottom: var(--space-xs); font-weight: 600;">Full Name *</label>
+            <input type="text" id="full_name" name="full_name" required class="form-input" placeholder="John Smith">
+          </div>
+          <div class="form-group" style="margin-bottom: var(--space-lg);">
+            <label for="email" style="display: block; margin-bottom: var(--space-xs); font-weight: 600;">Email *</label>
+            <input type="email" id="email" name="email" required class="form-input" placeholder="john@company.com">
+          </div>
+          <div class="form-group" style="margin-bottom: var(--space-lg);">
+            <label for="phone" style="display: block; margin-bottom: var(--space-xs); font-weight: 600;">Phone</label>
+            <input type="tel" id="phone" name="phone" class="form-input" placeholder="(808) 555-1234">
+          </div>
+          <div class="form-group" style="margin-bottom: var(--space-lg);">
+            <label for="address" style="display: block; margin-bottom: var(--space-xs); font-weight: 600;">Address</label>
+            <input type="text" id="address" name="address" class="form-input" placeholder="123 Main St, Honolulu, HI 96813">
+          </div>
+          <div class="form-group" style="margin-bottom: var(--space-xl);">
+            <label for="company" style="display: block; margin-bottom: var(--space-xs); font-weight: 600;">Company Name *</label>
+            <input type="text" id="company" name="company" required class="form-input" placeholder="Your Company Inc.">
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">Submit Request</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+<%- include('partials/footer') %>

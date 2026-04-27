@@ -1,0 +1,10 @@
+<%- include('partials/header') %>
+  <div class="auth-page">
+    <div class="auth-card" style="text-align: center;">
+      <div style="font-size: 4rem; margin-bottom: var(--space-md);">&#9888;</div>
+      <h2>Something Went Wrong</h2>
+      <p class="auth-subtitle"><%= typeof message !== 'undefined' ? message : 'An unexpected error occurred.' %></p>
+      <a href="/" class="btn btn-primary">Back to Home</a>
+    </div>
+  </div>
+<%- include('partials/footer') %>

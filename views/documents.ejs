@@ -1,0 +1,307 @@
+<%- include('partials/header') %>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <div style="padding: 0.5rem 1rem 0.75rem; margin-bottom: 0.25rem; border-bottom: 1px solid var(--neutral-700, #374151);">
+          <span style="display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; background: rgba(249, 115, 22, 0.15); color: var(--orange-400, #fb923c); border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 3px;">Admin</span>
+        </div>
+      <% } %>
+      <ul class="sidebar-nav">
+        <li><a href="/dashboard">&#128202; Overview</a></li>
+        <li><a href="/dashboard/documents" class="active">&#128196; Documents</a></li>
+        <li><a href="/dashboard/search">&#128269; Search</a></li>
+        <li><a href="/dashboard/upload">&#128228; Upload</a></li>
+        <li><a href="/dashboard/audit">&#128203; Audit Log</a></li>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+          <li><a href="/dashboard/tenants">&#127970; Tenants</a></li>
+        <% } %>
+        <li><a href="/dashboard/settings">&#9881; Settings</a></li>
+        <li><a href="/dashboard/suggestions">&#128161; Suggestions</a></li>
+        <li><a href="/dashboard/token-usage">&#9889; Token Usage</a></li>
+      </ul>
+    </aside>
+    <main class="main-content">
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>Documents</h1>
+        <a href="/dashboard/upload" class="btn btn-primary btn-sm">Upload New</a>
+      </div>
+
+      <%
+        // Collect all unique tags from documents for the filter bar
+        const allTags = [];
+        if (documents && documents.length > 0) {
+          documents.forEach(doc => {
+            if (doc.tags && Array.isArray(doc.tags)) {
+              doc.tags.forEach(tag => {
+                if (tag && allTags.indexOf(tag) === -1) allTags.push(tag);
+              });
+            }
+          });
+          allTags.sort();
+        }
+      %>
+
+      <% if (allTags.length > 0) { %>
+      <div class="card" style="margin-bottom: 1rem; padding: 0.75rem 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--neutral-300); margin-right: 0.25rem;">Filter by tag:</span>
+          <% allTags.forEach(tag => { %>
+            <button class="tag-filter" data-tag="<%= tag %>"><%= tag %></button>
+          <% }) %>
+          <button class="tag-filter tag-filter-clear" data-tag="" style="display:none;">Clear filter</button>
+        </div>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table id="documentsTable">
+            <thead>
+              <tr>
+                <th>Filename</th>
+                <th>Type</th>
+                <% if (typeof isAdmin !== 'undefined' && isAdmin && !(typeof impersonating !== 'undefined' && impersonating)) { %>
+                  <th>Tenant</th>
+                <% } %>
+                <th>Project</th>
+                <th>Status</th>
+                <th>Tags</th>
+                <th>Uploaded</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (documents && documents.length > 0) { %>
+                <% documents.forEach(doc => { %>
+                  <tr data-tags="<%= (doc.tags && Array.isArray(doc.tags)) ? doc.tags.join(',') : '' %>">
+                    <td style="color: var(--white);"><%= doc.original_filename %></td>
+                    <td><%= doc.file_type %></td>
+                    <% if (typeof isAdmin !== 'undefined' && isAdmin && !(typeof impersonating !== 'undefined' && impersonating)) { %>
+                      <td><%= doc.tenant_name || '—' %></td>
+                    <% } %>
+                    <td><%= doc.project_name || '' %></td>
+                    <td><span class="badge badge-<%= doc.status === 'processed' ? 'success' : doc.status === 'processing' ? 'warning' : 'info' %>"><%= doc.status %></span></td>
+                    <td>
+                      <% if (doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) { %>
+                        <% doc.tags.forEach(tag => { %>
+                          <span class="tag-pill tag-pill-<%= tag.toLowerCase().includes('deed') || tag.toLowerCase().includes('lease') || tag.toLowerCase().includes('mortgage') || tag.toLowerCase().includes('agreement') || tag.toLowerCase().includes('contract') || tag.toLowerCase().includes('permit') || tag.toLowerCase().includes('lien') || tag.toLowerCase().includes('title') || tag.toLowerCase().includes('notice') || tag.toLowerCase().includes('affidavit') || tag.toLowerCase().includes('easement') ? 'doctype' : tag.toLowerCase().includes('property') || tag.toLowerCase().includes('land') || tag.toLowerCase().includes('parcel') || tag.toLowerCase().includes('tmk') || tag.toLowerCase().includes('address') || tag.toLowerCase().includes('residential') || tag.toLowerCase().includes('commercial') || tag.toLowerCase().includes('zoning') ? 'property' : tag.toLowerCase().includes('$') || tag.toLowerCase().includes('amount') || tag.toLowerCase().includes('price') || tag.toLowerCase().includes('value') || tag.toLowerCase().includes('tax') || tag.toLowerCase().includes('fee') || tag.toLowerCase().includes('cost') ? 'amount' : 'party' %>"><%= tag %></span>
+                        <% }) %>
+                      <% } else { %>
+                        <span style="color: var(--neutral-500);">—</span>
+                      <% } %>
+                    </td>
+                    <td><%= formatDate(doc.created_at) %></td>
+                    <td><button class="btn btn-sm btn-outline btn-view-doc" data-doc-id="<%= doc.id %>">View</button></td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="<%= (typeof isAdmin !== 'undefined' && isAdmin && !(typeof impersonating !== 'undefined' && impersonating)) ? 8 : 7 %>" style="text-align: center;">No documents yet. <a href="/dashboard/upload">Upload your first document.</a></td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Document View Modal -->
+  <div id="docModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Document Details</h2>
+        <button id="modalCloseBtn" class="modal-close">&times;</button>
+      </div>
+      <div id="modalBody" class="modal-body">
+        <p>Loading...</p>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-content {
+      background: var(--neutral-800); border: 1px solid var(--neutral-700);
+      border-radius: var(--radius-lg); width: 90%; max-width: 800px;
+      max-height: 85vh; display: flex; flex-direction: column;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--neutral-700);
+    }
+    .modal-header h2 { margin: 0; font-size: 1.125rem; }
+    .modal-close {
+      background: none; border: none; color: var(--white);
+      font-size: 1.5rem; cursor: pointer; padding: 0 0.25rem;
+    }
+    .modal-body {
+      padding: 1.5rem; overflow-y: auto; flex: 1;
+    }
+    .doc-field { margin-bottom: 1rem; }
+    .doc-field-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--neutral-300); margin-bottom: 0.25rem; }
+    .doc-field-value { color: var(--white); }
+    .doc-extracted { background: var(--neutral-900); border-radius: var(--radius-md); padding: 1rem; margin-top: 0.5rem; }
+    .doc-extracted pre { white-space: pre-wrap; word-break: break-word; font-size: 0.8125rem; color: var(--neutral-200); margin: 0; }
+    .doc-text-preview { background: var(--neutral-900); border-radius: var(--radius-md); padding: 1rem; max-height: 200px; overflow-y: auto; }
+    .doc-text-preview pre { white-space: pre-wrap; word-break: break-word; font-size: 0.8125rem; color: var(--neutral-200); margin: 0; }
+
+    /* Tag pills */
+    .tag-pill {
+      display: inline-block; font-size: 11px; padding: 2px 8px;
+      border-radius: 9999px; margin: 1px 3px 1px 0; font-weight: 500;
+      white-space: nowrap; line-height: 1.4;
+    }
+    .tag-pill-doctype { background: rgba(249,115,22,0.2); color: #fb923c; }
+    .tag-pill-party   { background: rgba(76, 196, 110, 0.2); color: #7dd99a; }
+    .tag-pill-property { background: rgba(34,197,94,0.2); color: #4ade80; }
+    .tag-pill-amount  { background: rgba(168,85,247,0.2); color: #c084fc; }
+
+    /* Tag filter bar */
+    .tag-filter {
+      display: inline-block; font-size: 11px; padding: 3px 10px;
+      border-radius: 9999px; border: 1px solid var(--neutral-600);
+      background: transparent; color: var(--neutral-300);
+      cursor: pointer; transition: all 0.15s ease; font-weight: 500;
+    }
+    .tag-filter:hover { border-color: var(--neutral-400); color: var(--white); background: var(--neutral-700); }
+    .tag-filter.active { border-color: var(--primary, #4cc46e); color: var(--white); background: rgba(76, 196, 110, 0.2); }
+    .tag-filter-clear { border-color: var(--neutral-600); color: var(--neutral-400); }
+    .tag-filter-clear:hover { border-color: var(--error, #ef4444); color: var(--error, #ef4444); }
+
+    /* Modal tags section */
+    .modal-tags { margin-top: 0.25rem; }
+  </style>
+
+  <script>
+    (function() {
+      // --- Modal open/close ---
+      function openModal() { document.getElementById('docModal').style.display = 'flex'; }
+      function closeModal() { document.getElementById('docModal').style.display = 'none'; }
+
+      document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+      document.getElementById('docModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+      });
+      document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+      // --- Helper: classify a tag for pill color ---
+      function tagColorClass(tag) {
+        var t = tag.toLowerCase();
+        if (/deed|lease|mortgage|agreement|contract|permit|lien|title|notice|affidavit|easement/.test(t)) return 'tag-pill-doctype';
+        if (/property|land|parcel|tmk|address|residential|commercial|zoning/.test(t)) return 'tag-pill-property';
+        if (/\$|amount|price|value|tax|fee|cost/.test(t)) return 'tag-pill-amount';
+        return 'tag-pill-party';
+      }
+
+      function escapeHtml(s) {
+        var d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+      }
+
+      // --- View document (with tags in modal) ---
+      function viewDocument(id) {
+        openModal();
+        document.getElementById('modalBody').innerHTML = '<p>Loading...</p>';
+        fetch('/api/documents/' + id + '/view')
+          .then(function(r) { return r.json(); })
+          .then(function(doc) {
+            document.getElementById('modalTitle').textContent = doc.original_filename || 'Document Details';
+            var extracted = '';
+            if (doc.extracted_data) {
+              var data = typeof doc.extracted_data === 'string' ? JSON.parse(doc.extracted_data) : doc.extracted_data;
+              if (data.document_type) extracted += '<div class="doc-field"><div class="doc-field-label">Document Type</div><div class="doc-field-value">' + escapeHtml(data.document_type) + '</div></div>';
+              if (data.summary) extracted += '<div class="doc-field"><div class="doc-field-label">Summary</div><div class="doc-field-value">' + escapeHtml(data.summary) + '</div></div>';
+              if (data.parties && data.parties.length) extracted += '<div class="doc-field"><div class="doc-field-label">Parties</div><div class="doc-field-value">' + data.parties.map(escapeHtml).join(', ') + '</div></div>';
+              if (data.dates && data.dates.length) extracted += '<div class="doc-field"><div class="doc-field-label">Dates</div><div class="doc-field-value">' + data.dates.map(escapeHtml).join(', ') + '</div></div>';
+              if (data.amounts && data.amounts.length) extracted += '<div class="doc-field"><div class="doc-field-label">Amounts</div><div class="doc-field-value">' + data.amounts.map(escapeHtml).join(', ') + '</div></div>';
+              if (data.key_findings && data.key_findings.length) extracted += '<div class="doc-field"><div class="doc-field-label">Key Findings</div><div class="doc-field-value"><ul style="margin:0;padding-left:1.25rem;">' + data.key_findings.map(function(f) { return '<li>' + escapeHtml(f) + '</li>'; }).join('') + '</ul></div></div>';
+              if (data.property_info) {
+                var pi = data.property_info, parts = [];
+                if (pi.address) parts.push(escapeHtml(pi.address));
+                if (pi.tmk) parts.push('TMK: ' + escapeHtml(pi.tmk));
+                if (pi.parcel_id) parts.push('Parcel: ' + escapeHtml(pi.parcel_id));
+                if (parts.length) extracted += '<div class="doc-field"><div class="doc-field-label">Property Info</div><div class="doc-field-value">' + parts.join(' | ') + '</div></div>';
+              }
+            }
+
+            var html = '<div class="doc-field"><div class="doc-field-label">Status</div><div class="doc-field-value"><span class="badge badge-' + (doc.status === 'processed' ? 'success' : 'info') + '">' + escapeHtml(doc.status) + '</span></div></div>';
+            html += '<div class="doc-field"><div class="doc-field-label">File</div><div class="doc-field-value">' + escapeHtml((doc.file_type || '').toUpperCase()) + ' &middot; ' + (doc.file_size ? (doc.file_size / 1024).toFixed(0) + ' KB' : '\u2014') + ' &middot; Uploaded ' + new Date(doc.created_at).toLocaleString('en-US', { timeZone: 'Pacific/Honolulu', dateStyle: 'medium', timeStyle: 'short' }) + '</div></div>';
+
+            // Tags in modal
+            if (doc.tags && Array.isArray(doc.tags) && doc.tags.length > 0) {
+              html += '<div class="doc-field"><div class="doc-field-label">Tags</div><div class="doc-field-value modal-tags">';
+              doc.tags.forEach(function(tag) {
+                html += '<span class="tag-pill ' + tagColorClass(tag) + '">' + escapeHtml(tag) + '</span>';
+              });
+              html += '</div></div>';
+            }
+
+            if (doc.llm_model) html += '<div class="doc-field"><div class="doc-field-label">AI Model</div><div class="doc-field-value">' + escapeHtml(doc.llm_model) + '</div></div>';
+            if (extracted) html += '<hr style="border-color:var(--neutral-700);margin:1rem 0;"><h3 style="font-size:0.9375rem;margin-bottom:1rem;">AI Extraction</h3>' + extracted;
+            if (doc.ocr_text && doc.ocr_text.length > 10) {
+              html += '<hr style="border-color:var(--neutral-700);margin:1rem 0;"><h3 style="font-size:0.9375rem;margin-bottom:0.5rem;">OCR Text Preview</h3><div class="doc-text-preview"><pre>' + escapeHtml(doc.ocr_text.slice(0, 2000)) + (doc.ocr_text.length > 2000 ? '\n\n... (' + doc.ocr_text.length + ' chars total)' : '') + '</pre></div>';
+            }
+            document.getElementById('modalBody').innerHTML = html;
+          })
+          .catch(function() {
+            document.getElementById('modalBody').innerHTML = '<p style="color:var(--error);">Failed to load document.</p>';
+          });
+      }
+
+      // --- View buttons (no inline onclick) ---
+      document.querySelectorAll('.btn-view-doc').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          viewDocument(this.getAttribute('data-doc-id'));
+        });
+      });
+
+      // --- Tag filter bar ---
+      var activeFilter = null;
+      var clearBtn = document.querySelector('.tag-filter-clear');
+
+      document.querySelectorAll('.tag-filter:not(.tag-filter-clear)').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var tag = this.getAttribute('data-tag');
+          // Toggle: if already active, clear filter
+          if (activeFilter === tag) {
+            activeFilter = null;
+            this.classList.remove('active');
+            if (clearBtn) clearBtn.style.display = 'none';
+          } else {
+            // Deactivate previous
+            document.querySelectorAll('.tag-filter.active').forEach(function(b) { b.classList.remove('active'); });
+            activeFilter = tag;
+            this.classList.add('active');
+            if (clearBtn) clearBtn.style.display = 'inline-block';
+          }
+          applyFilter();
+        });
+      });
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+          activeFilter = null;
+          document.querySelectorAll('.tag-filter.active').forEach(function(b) { b.classList.remove('active'); });
+          this.style.display = 'none';
+          applyFilter();
+        });
+      }
+
+      function applyFilter() {
+        var rows = document.querySelectorAll('#documentsTable tbody tr');
+        rows.forEach(function(row) {
+          if (!activeFilter) {
+            row.style.display = '';
+            return;
+          }
+          var tags = (row.getAttribute('data-tags') || '').split(',');
+          row.style.display = tags.indexOf(activeFilter) !== -1 ? '' : 'none';
+        });
+      }
+    })();
+  </script>
+
+<%- include('partials/footer') %>
