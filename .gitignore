@@ -1,0 +1,14 @@
+# Snapshot tarballs - keep raw archives out of git
+servers/*/snapshots/*.tar.gz
+servers/*/snapshots/*.tgz
+
+# Anything explicitly marked as containing secrets
+**/secret-*
+**/*.private
+**/*.pem
+**/*.key
+!**/cert-inventory.txt
+
+# Local-only review notes
+SCRATCH.md
+.scratch/
