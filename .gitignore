@@ -1,6 +1,8 @@
-# Snapshot tarballs - keep raw archives out of git
-servers/*/snapshots/*.tar.gz
-servers/*/snapshots/*.tgz
+# Server snapshots and operational docs - never commit to this public repo
+servers/
+server-snapshot-*.tar.gz
+server-snapshot-*.tgz
+server-snapshot-*/
 
 # Anything explicitly marked as containing secrets
 **/secret-*

@@ -54,15 +54,13 @@ sit in unsearchable PDFs and shared drives. We built docs.hawaiidata.ai to:
 
 ## Repository contents
 
-This repo holds operational documentation for the platform.
+This is a public repository, so it holds only non-sensitive material.
 
-- [`servers/`](servers/) — per-server inventory, service docs, and restore
-  runbooks. Each server has a snapshot directory with raw captures from
-  [`scripts/capture-server.sh`](scripts/capture-server.sh).
-- [`scripts/`](scripts/) — operational scripts (server snapshot, etc.).
+- [`scripts/capture-server.sh`](scripts/capture-server.sh) — generic snapshot
+  tool for documenting and deprecating a Linux server. Captures host,
+  network, packages, services, web/TLS configs, database metadata,
+  containers, and filesystem layout into a tarball; intentionally excludes
+  private keys, `.env` values, and database dumps.
 
-## Status
-
-Documenting the current production server (`hawaii-01`) ahead of
-deprecation so it can be reconstituted on demand. See
-[`servers/hawaii-01/`](servers/hawaii-01/).
+Operational documentation (server inventory, service map, restore runbooks,
+secrets index) lives in a **private** location and is **not** published here.
